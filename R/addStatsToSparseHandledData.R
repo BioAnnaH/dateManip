@@ -20,7 +20,8 @@
 #' @export
 
 addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignorePeriods = 0, returnLimits = FALSE, limitFactor = 3, limitSide = 'upper', altUL = 0.001, altLL = 0.00) {
-
+	
+	rollPeriods=0
   if(length(ratePartitionVec) == 1) {
 
     sparseRateFrame[,'combocat'] <- sparseRateFrame[,ratePartitionVec]
@@ -30,20 +31,47 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
   }
 
   comboCats <- as.character(unique(sparseRateFrame[,'combocat']))
-  avgFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Avg = mean(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'DateGroup']) - ignorePeriods)], na.rm=TRUE)))))
+  ### define functions to calculate averages and standard deviations 
+  calculateAverages <- function(x, sparseRateFrame, rollPeriods){
+  	
+  	temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
+  	start.index <- (nrow(temp.df) - rollPeriods)/2
+  	averages <- unlist(lapply(seq(start.index, nrow(temp.df), 1), function(k)mean(temp.df[(k-53):k, 'Rate'], na.rm=TRUE)))
+  	averagecat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , "_", x, sep="")
+  	return(cbind(dateGroupCombocat=averagecat, Avg=averages))
+
+  }
+  calculateSdev <- function(x, sparseRateFrame, rollPeriods){
+  	
+  	temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
+  	start.index <- (nrow(temp.df) - rollPeriods)/2
+  	sdevs <- unlist(lapply(seq(start.index, nrow(temp.df), 1), function(k)sd(temp.df[(k-53):k, 'Rate'], na.rm=TRUE)))
+  	sdevcat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , "_", x, sep="")
+  	return(cbind(dateGroupCombocat=sdevcat, Sdev=sdevs))
+  	
+  }
+  
+  avgFrame <- as.data.frame(do.call(rbind, lapply(comboCats, calculateAverages, sparseRateFrame, rollPeriods)))
+  #avgFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Avg = mean(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'DateGroup']) - ignorePeriods)], na.rm=TRUE)))))
   avgFrame[,'Avg'] <- as.numeric(as.character(avgFrame[,'Avg']))
   avgFrame[is.nan(avgFrame[,'Avg']),'Avg'] <- NA
-  sparseRateFrame <- merge(sparseRateFrame, avgFrame, by='combocat')
+  sparseRateFrame$dateGroupCombocat <- paste(sparseRateFrame$DateGroup, "_", sparseRateFrame$combocat, sep="")
+  sparseRateFrame.original <- sparseRateFrame 
+  sparseRateFrame <- merge(sparseRateFrame, avgFrame, by='dateGroupCombocat')
+  print(sparseRateFrame)
 
   if(returnLimits == FALSE) {
 
     sparseRateFrame <- sparseRateFrame[!(is.na(sparseRateFrame[,'Avg'])), ]
     keepCols <- colnames(sparseRateFrame)[!(colnames(sparseRateFrame) %in% colnames(sparseRateFrame)[grep('combocat', colnames(sparseRateFrame))])]
+    keepCols <- keepCols[-which(colnames(sparseRateFrame) =="dateGroupCombocat")] 
     return(sparseRateFrame[,keepCols])
   } else {
-
-    sdFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Sdev = sd(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'Rate']) - ignorePeriods)], na.rm=TRUE)))))
-    sparseRateFrame <- merge(sparseRateFrame, sdFrame, by='combocat')
+		
+  	sdFrame <- as.data.frame(do.call(rbind, lapply(comboCats, calculateSdev, sparseRateFrame.original, rollPeriods)))
+    #sdFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Sdev = sd(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'Rate']) - ignorePeriods)], na.rm=TRUE)))))
+    #sparseRateFrame$dateGroupCombocat <- paste(sparseRateFrame$DateGroup, "_", sparseRateFrame$combocat, sep="")
+  	sparseRateFrame <- merge(sparseRateFrame, sdFrame, by='dateGroupCombocat')
     sparseRateFrame[,'Sdev'] <- as.numeric(as.character(sparseRateFrame[,'Sdev']))
 
     if(limitSide == 'upper') {

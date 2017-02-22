@@ -15,7 +15,8 @@
 #' @export
 
 findStartDate <- function(msCalFrame, yearSubGroup, timeUnitsToKeep, rollPeriods = 0) {
-
+	
+	timeUnitsToKeep <- timeUnitsToKeep*2
   uniqueCal <- unique(msCalFrame[,c('Year', yearSubGroup, 'DateGroup')])
   uniqueCal[,'Index'] <- seq(length(uniqueCal[,'Year']), 1, -1)
 

@@ -6,7 +6,7 @@
 #' @param yearSubGroup is a sub-group of a year, i.e. 'Week', 'Month', or 'Quarter'
 #' @return a data frame of dates starting at Jan 1 of the startYear and ending today, which the corresponding year and DateGroup (e.g. 2015-01 for Week 1 of 2015 if yearSubGroup = 'Week')
 #' @author Aimie Faucett
-#' @details
+#' @detailsWW
 #' This function takes in a startYear and yearSubGroup and returns a data frame containing all the dates from the start of the startYear
 #' through today along with the year and yearSubGroup number. If the yearSubGroup is 'Week', then the function will return week numbers consistent
 #' with Microsoft's Excel WEEKNUM and SQL DATEPART(ww, ) functions.
@@ -34,7 +34,7 @@ createCalendarLikeMicrosoft <- function(startYear, yearSubGroup) {
       cutBreaks <- which(subFrame[,'DayOfWeek'] == '0')
 
       if(years[i] != thisYear) {
-
+				
         cutLabels <- seq(1, 53, 1)
       } else {
 
@@ -43,8 +43,8 @@ createCalendarLikeMicrosoft <- function(startYear, yearSubGroup) {
       }
 
       if(min(cutBreaks) == 1) {
-
-        subFrame[,'Week'] <- cut(subFrame[,'Index'], breaks = c(cutBreaks, 366), include.lowest = TRUE, right = FALSE, labels = cutLabels)
+			
+        subFrame[,'Week'] <- cut(subFrame[,'Index'], breaks = c(cutBreaks, 366), include.lowest = TRUE, right = FALSE, labels = cutLabels[-1])
       } else {
 
         if(length(levels(cut(subFrame[,'Index'], breaks = c(1, cutBreaks, 366)))) < length(cutLabels)) {
