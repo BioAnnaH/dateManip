@@ -16,7 +16,14 @@
 
 findStartDate <- function(msCalFrame, yearSubGroup, timeUnitsToKeep, rollPeriods = 0) {
 	
-	timeUnitsToKeep <- timeUnitsToKeep*2
+	if(yearSubGroup == "Week"){
+		timeUnitsToKeep <- timeUnitsToKeep + 53
+	}else if(yearSubGroup == "Month"){
+		timeUnitsToKeep <- timeUnitsToKeep + 12
+			
+	}else{
+		timeUnitsToKeep <- timeUnitsToKeep + 4	
+	}
   uniqueCal <- unique(msCalFrame[,c('Year', yearSubGroup, 'DateGroup')])
   uniqueCal[,'Index'] <- seq(length(uniqueCal[,'Year']), 1, -1)
 
