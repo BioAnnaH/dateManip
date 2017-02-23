@@ -19,7 +19,7 @@
 #' mergeColsX and mergeColsY and then finding a rate for each unique combination of the merged columns.
 #' @export
 
-mergeCalSparseFrames <- function(numFrame, denomFrame, mergeColsX, mergeColsY, numNumeric, denomNumeric, sparseHandling, rollPeriods = 0) {
+mergeCalSparseFrames <- function(numFrame, denomFrame, mergeColsX, mergeColsY, numNumeric, denomNumeric, sparseHandling, rollPeriods = 0, addExtra=FALSE, dateGroup="Week") {
 
   colnames(numFrame)[grep(paste('\\b',numNumeric,'\\b',sep=''), colnames(numFrame))] <- 'numRecord'
   colnames(denomFrame)[grep(paste('\\b',denomNumeric,'\\b',sep=''), colnames(denomFrame))] <- 'denomRecord'
@@ -73,5 +73,21 @@ mergeCalSparseFrames <- function(numFrame, denomFrame, mergeColsX, mergeColsY, n
 
   trimCols <- colnames(mrgFrame)[grep('combocat|num|denom', colnames(mrgFrame))]
   mrgFrame <- mrgFrame[,!(colnames(mrgFrame) %in% trimCols)]
+  if(!addExtra){
+  		## get rid of extra dategroups at the beginning of the data frame 
+  	  if(dateGroup == "Week"){
+  	  	discard.weeks <- unique(mrgFrame$DateGroup)[1:52]
+  	  	mrgFrame <- mrgFrame[which(!(mrgFrame$DateGroup %in% discard.weeks)), ]
+  	  }else if(datGroup == "Month"){
+  	  	discard.months <- unique(mrgFrame$DateGroup)[1:11]
+  	  	mrgFrame <- mrgFrame[which(!(mrgFrame$DateGroup %in% discard.weeks)), ]
+
+  	  }else if(dateGroup =="Quarter"){
+  	  	discard.quarters <- unique(mrgFrame$DateGroup)[1:3]
+  	  	mrgFrame <- mrgFrame[which(!(mrgFrame$DateGroup %in% discard.weeks)), ]
+
+  	  }
+  }
+  
   return(mrgFrame)
 }
