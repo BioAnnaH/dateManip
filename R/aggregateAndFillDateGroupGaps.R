@@ -19,7 +19,7 @@
 #' @export
 #' @importFrom stats aggregate
 
-aggregateAndFillDateGroupGaps <- function(msCalFrame, yearSubGroup, gappedFrame, colsToAgg, startDate, functionCol, funToPerform, sparseHandling, addExtra=FALSE) {
+aggregateAndFillDateGroupGaps <- function(msCalFrame, yearSubGroup, gappedFrame, colsToAgg, startDate, functionCol, funToPerform, sparseHandling) {
 
   baseFrame <- unique(msCalFrame[,c('Year', yearSubGroup, 'DateGroup')])
   baseFrame <- baseFrame[baseFrame[,'DateGroup'] >= startDate, ]
@@ -44,21 +44,6 @@ aggregateAndFillDateGroupGaps <- function(msCalFrame, yearSubGroup, gappedFrame,
 
   outFrame <- cbind(crossJoined[,c('DateGroup',functionCol)], decoded)
   outFrame <- outFrame[,c('DateGroup', colsToAgg, functionCol)]
-  if(!addExtra){
-  	## get rid of extra dategroups at the beginning of the data frame 
-  	if(yearSubGroup == "Week"){
-  		discard.weeks <- unique(outFrame$DateGroup)[1:52]
-  	  outFrame <- outFrame[which(!(outFrame$DateGroup %in% discard.weeks)), ]
-  	}else if(yearSubGroup == "Month"){
-  	  discard.months <- unique(outFrame$DateGroup)[1:11]
-  	  outFrame <- mrgFrame[which(!(outFrame$DateGroup %in% discard.weeks)), ]
-
-  	}else if(yearSubGroup =="Quarter"){
-  	  discard.quarters <- unique(mrgFrame$DateGroup)[1:3]
-  	  outFrame <- outFrame[which(!(outFrame$DateGroup %in% discard.weeks)), ]
-  	}
-  }
-
 
   if(is.na(sparseHandling)) {
 
@@ -76,4 +61,3 @@ aggregateAndFillDateGroupGaps <- function(msCalFrame, yearSubGroup, gappedFrame,
     stop('The sparseHandling parameter was not recognized. The parameter should be NA, 0, or 1.')
   }
 }
-

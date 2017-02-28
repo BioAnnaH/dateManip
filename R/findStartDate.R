@@ -14,14 +14,14 @@
 #' rollPeriods prior to the most current DateGroup.
 #' @export
 
-findStartDate <- function(msCalFrame, yearSubGroup, timeUnitsToKeep, rollPeriods = 0) {
+findStartDate <- function(msCalFrame, yearSubGroup, timeUnitsToKeep, rollPeriods = 0, plot.startDate=FALSE) {
 	
-	if(yearSubGroup == "Week"){
+	if( !plot.startDate & yearSubGroup == "Week"){
 		timeUnitsToKeep <- timeUnitsToKeep + 53
-	}else if(yearSubGroup == "Month"){
+	}else if(!plot.startDate & yearSubGroup == "Month"){
 		timeUnitsToKeep <- timeUnitsToKeep + 12
 			
-	}else{
+	}else if(!plot.startDate & yearSubGroup == "Quarter"){
 		timeUnitsToKeep <- timeUnitsToKeep + 4	
 	}
   uniqueCal <- unique(msCalFrame[,c('Year', yearSubGroup, 'DateGroup')])

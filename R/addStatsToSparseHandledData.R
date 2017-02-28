@@ -20,11 +20,11 @@
 #' altUL and altLL allow the user to specify an alternate limit that can be applied instead of the limitFactor.
 #' @export
 
-addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignorePeriods = 0, returnLimits = FALSE, limitFactor = 3, limitSide = 'upper', altUL = 0.001, altLL = 0.00, dategroup="Week"){
+addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignorePeriods = 0, returnLimits = FALSE, limitFactor = 3, limitSide = 'upper', altUL = 0.001, altLL = 0.00, keepPeriods){
 	
 	
-	limit.include <-list("Week"=52, "Month"=11, "Quarter"=3)
-	limit.exclude <- list("Week"=3, "Month"=1, "Quarter"=1)
+	#limit.include <-list("Week"=52, "Month"=11, "Quarter"=3)
+	#limit.exclude <- list("Week"=3, "Month"=1, "Quarter"=1)
 	
   if(length(ratePartitionVec) == 1) {
 
@@ -37,47 +37,34 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
   comboCats <- as.character(unique(sparseRateFrame[,'combocat']))
   ### define functions to calculate averages and standard deviations 
   calculateAverages <- function(x, sparseRateFrame, ignorePeriods){
-  	
+  	## get the entries of sparseRateFrame that are part of the current combocat
   	temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
-  	earliest.group <- as.numeric(substr(temp.df[1, 'DateGroup'], 6, nchar(as.character(temp.df[1, 'DateGroup']))))
-  	earliest.year <- substr(temp.df[1, 'DateGroup'], 1, 4)
-  	start.group <- earliest.group + limit.include[[dategroup]] +1
-  	if(start.group > 53){
-  		earliest.year <- gsub(substr(earliest.year, 4,4), as.numeric(substr(earliest.year, 4,4)) + 1, earliest.year)
-  		start.group <- start.group - 53
-  		if(start.group < 10){
-  			start.group<-paste("0",as.character(start.group), sep="")	
-  		}else{
-  			start.group<- as.character(start.group)	
-  		}
-  	}
-  	
-  	start.group <- paste0(earliest.year, "-", start.group)
+  	temp.df <- temp.df[order(temp.df$DateGroup), ]
+  	unique.dates <- unique(temp.df$DateGroup)
+  	start.group <- unique.dates[keepPeriods+1]
+  	## find the index of the the first row with the startDate.plotting start date (the one you want to see on the graph)
   	start.index <- min(which(temp.df$DateGroup == start.group))
-  	averages <- unlist(lapply(seq(start.index, nrow(temp.df), 1), function(k)mean(temp.df[(k-limit.include[[dategroup]]):(k-limit.exclude[[dategroup]]-ignorePeriods), 'Rate'], na.rm=TRUE)))
-  	averagecat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , "_", x, sep="")
+    unique.dates <- unique(temp.df$DateGroup)
+    date.indices <- unlist(lapply(temp.df$DateGroup[start.index:nrow(temp.df)], function(x)which(unique.dates ==x)))
+  	averages <- unlist(lapply(date.indices, function(k)mean(temp.df[which(temp.df$DateGroup %in% unique.dates[(k-keepPeriods-1):(k-1-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
+  	averagecat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , ",", x, sep="")
   	return(cbind(dateGroupcombocat=averagecat, Avg=averages))
 
   }
+  
   calculateSdev <- function(x, sparseRateFrame, ignorePeriods){
   	
+  	## get the entries of sparseRateFrame that are part of the current combocat
   	temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
-  	earliest.group <- as.numeric(substr(temp.df[1, 'DateGroup'], 6, nchar(as.character(temp.df[1, 'DateGroup']))))
-  	earliest.year <- substr(temp.df[1, 'DateGroup'], 1, 4)
-  	start.group <- earliest.group + limit.include[[dategroup]] +1
-  	if(start.group > 53){
-  		earliest.year <- gsub(substr(earliest.year, 4,4), as.numeric(substr(earliest.year, 4,4)) + 1, earliest.year)
-  		start.group <- start.group - 53
-  		if(start.group < 10){
-  			start.group<-paste("0",as.character(start.group), sep="")	
-  		}else{
-  			start.group<- as.character(start.group)	
-  		}
-  	}
-  	start.group <- paste0(earliest.year, "-", start.group)
-  	start.index <- min(which(temp.df$DateGroup == start.group)) 
-  	sdevs <- unlist(lapply(seq(start.index, nrow(temp.df), 1), function(k)sd(temp.df[(k-limit.include[[dategroup]]):(k-limit.exclude[[dategroup]]-ignorePeriods), 'Rate'], na.rm=TRUE)))
-  	sdevcat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , "_", x, sep="")
+  	temp.df <- temp.df[order(temp.df$DateGroup), ]
+  	unique.dates <- unique(temp.df$DateGroup)
+  	start.group <- unique.dates[keepPeriods+1]
+  	## find the index of the the first row with the startDate.plotting start date (the one you want to see on the graph)
+  	start.index <- min(which(temp.df$DateGroup == start.group))
+    unique.dates <- unique(temp.df$DateGroup)
+    date.indices <- unlist(lapply(temp.df$DateGroup[start.index:nrow(temp.df)], function(x)which(unique.dates ==x)))
+  	sdevs <- unlist(lapply(date.indices, function(k)sd(temp.df[which(temp.df$DateGroup %in% unique.dates[(k-keepPeriods-1):(k-1-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
+  	sdevcat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , ",", x, sep="")
   	return(cbind(dateGroupcombocat=sdevcat, Sdev=sdevs))
   	
   }
@@ -87,9 +74,9 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
   avgFrame[,'Avg'] <- as.numeric(as.character(avgFrame[,'Avg']))
   avgFrame[is.nan(avgFrame[,'Avg']),'Avg'] <- NA
   
-  sparseRateFrame$dateGroupcombocat <- paste(sparseRateFrame$DateGroup, "_", sparseRateFrame$combocat, sep="")
+  sparseRateFrame$dateGroupcombocat <- paste(sparseRateFrame$DateGroup, ",", sparseRateFrame$combocat, sep="")
   sparseRateFrame.original <- sparseRateFrame 
-  sparseRateFrame <- merge(sparseRateFrame, avgFrame, by='dateGroupcombocat')
+  sparseRateFrame <- unique(merge(sparseRateFrame, avgFrame, by='dateGroupcombocat'))
  
 
   if(returnLimits == FALSE) {
@@ -101,8 +88,8 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
 		
   	sdFrame <- as.data.frame(do.call(rbind, lapply(comboCats, calculateSdev, sparseRateFrame.original, ignorePeriods)))
     #sdFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Sdev = sd(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'Rate']) - ignorePeriods)], na.rm=TRUE)))))
-    sparseRateFrame$dateGroupcombocat <- paste(sparseRateFrame$DateGroup, "_", sparseRateFrame$combocat, sep="")
-  	sparseRateFrame <- merge(sparseRateFrame, sdFrame, by='dateGroupcombocat')
+    sparseRateFrame$dateGroupcombocat <- paste(sparseRateFrame$DateGroup, ",", sparseRateFrame$combocat, sep="")
+  	sparseRateFrame <- unique(merge(sparseRateFrame, sdFrame, by='dateGroupcombocat'))
     sparseRateFrame[,'Sdev'] <- as.numeric(as.character(sparseRateFrame[,'Sdev']))
 
     if(limitSide == 'upper') {
@@ -127,7 +114,7 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
       stop("The limitSide parameter has been specified incorrectly... the function take three options: 'upper', 'lower', or 'two.sided'.")
     }
 
-    sparseRateFrame <- sparseRateFrame[!(is.na(sparseRateFrame[,'Avg'])), ]
+    #sparseRateFrame <- sparseRateFrame[!(is.na(sparseRateFrame[,'Avg'])), ]
     keepCols <- colnames(sparseRateFrame)[!(colnames(sparseRateFrame) %in% colnames(sparseRateFrame)[grep('combocat', colnames(sparseRateFrame))])]
     return(sparseRateFrame[,keepCols])
   }
