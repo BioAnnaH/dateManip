@@ -35,36 +35,6 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
 
   comboCats <- as.character(unique(sparseRateFrame[,'combocat']))
   
-  ### define functions to calculate averages and standard deviations 
-  #calculateAverages <- function(x, sparseRateFrame, ignorePeriods){
-  	## get the entries of sparseRateFrame that are part of the current combocat
-  #	temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
-  #	temp.df <- temp.df[order(temp.df$DateGroup), ]
-  #	## find the index of the the first row with the startDate.plotting start date (the one you want to see on the graph)
-  #	start.index <- min(which(temp.df$DateGroup == unique(temp.df$DateGroup)[keepPeriods+1] ))
-  # unique.dates <- unique(temp.df$DateGroup)
-  #  date.indices <- unlist(lapply(temp.df$DateGroup[start.index:nrow(temp.df)], function(x)which(unique.dates ==x)))
-  #	averages <- unlist(lapply(date.indices, function(k)mean(temp.df[which(temp.df$DateGroup %in% unique.dates[(k-keepPeriods):(k-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
-  #	averagecat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , ",", x, sep="")
-  #	return(cbind(dateGroupcombocat=averagecat, Avg=averages))
-
-  #}
-  
-  #calculateSdev <- function(x, sparseRateFrame, ignorePeriods){
-  	
-  	## get the entries of sparseRateFrame that are part of the current combocat
-  #	temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
-  #	temp.df <- temp.df[order(temp.df$DateGroup), ]
-  	## find the index of the the first row with the startDate.plotting start date (the one you want to see on the graph)
-  #	start.index <- min(which(temp.df$DateGroup == unique(temp.df$DateGroup)[keepPeriods+1] ))
-  #  unique.dates <- unique(temp.df$DateGroup)
-  #  date.indices <- unlist(lapply(temp.df$DateGroup[start.index:nrow(temp.df)], function(x)which(unique.dates ==x)))
- # 	sdevs <- unlist(lapply(date.indices, function(k)sd(temp.df[which(temp.df$DateGroup %in% unique.dates[(k-keepPeriods):(k-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
-  #	sdevcat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , ",", x, sep="")
- # 	return(cbind(dateGroupcombocat=sdevcat, Sdev=sdevs))
-  	
-  #}
-  
   if(keepPeriods == 0){
   	avgFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Avg = mean(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'DateGroup']) - ignorePeriods)], na.rm=TRUE)))))
 		avgFrame[,'Avg'] <- as.numeric(as.character(avgFrame[,'Avg']))
@@ -72,18 +42,16 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
   	sparseRateFrame <- merge(sparseRateFrame, avgFrame, by='combocat')
 
   }else{ 
-  	comboCat.list <- vector(mode="list")
+  	comboCat.list <- vector(mode="list") #make a list to go into avgFrame
   	for(x in comboCats){ 
   		# make a data frame with only the relevant comboCat
-  		temp.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
-  		temp.df <- temp.df[order(temp.df$DateGroup), ]
+  		combocat.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
+  		combocat.df <- combocat.df[order(combocat.df$DateGroup), ]
   		## find the index of the the first row with the plot.startDate.[week, month, quarter] (the one you want to see on the graph)
-  		start.index <- min(which(temp.df$DateGroup == unique(temp.df$DateGroup)[keepPeriods+1] ))
-    	unique.dates <- unique(temp.df$DateGroup)
-    	## make a vector of all the indices of unique.dates that match the dates in temp.df
-    	date.indices <- unlist(lapply(temp.df$DateGroup[start.index:nrow(temp.df)], function(x)which(unique.dates ==x)))
-  		averages <- unlist(lapply(date.indices, function(k)mean(temp.df[which(temp.df$DateGroup %in% unique.dates[(k-keepPeriods):(k-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
-  		averagecat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , ",", x, sep="")
+  		start.index <- min(which(combocat.df$DateGroup == unique(combocat.df$DateGroup)[keepPeriods+1] ))
+    	unique.dates <- unique(combocat.df$DateGroup)
+  		averages <- unlist(lapply(combocat.df$DateGroup[start.index:nrow(combocat.df)], function(j)mean(combocat.df[which(combocat.df$DateGroup %in% unique.dates[(which(unique.dates == j)-keepPeriods):(which(unique.dates == j)-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
+  		averagecat <-  paste( combocat.df$DateGroup[start.index:nrow(combocat.df)] , ",", x, sep="")
 			comboCat.list[[x]] <- cbind(dateGroupcombocat=averagecat, Avg=averages)
   	}
   	
@@ -110,15 +78,15 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
 			comboCat.list <- vector(mode="list")
   		for(x in comboCats){
   			# make a data frame with only the relevant comboCat
-  			temp.df <- sparseRateFrame.original[which(sparseRateFrame.original$combocat == x), ]
-  			temp.df <- temp.df[order(temp.df$DateGroup), ]
+  			combocat.df <- sparseRateFrame.original[which(sparseRateFrame.original$combocat == x), ]
+  			combocat.df <- combocat.df[order(combocat.df$DateGroup), ]
   			## find the index of the the first row with the plot.startDate.[week, month, quarter] (the one you want to see on the graph)
-  			start.index <- min(which(temp.df$DateGroup == unique(temp.df$DateGroup)[keepPeriods+1] ))
-    		unique.dates <- unique(temp.df$DateGroup)
-    		date.indices <- unlist(lapply(temp.df$DateGroup[start.index:nrow(temp.df)], function(x)which(unique.dates ==x)))
+  			start.index <- min(which(combocat.df$DateGroup == unique(combocat.df$DateGroup)[keepPeriods+1] ))
+    		unique.dates <- unique(combocat.df$DateGroup)
+    		#date.indices <- unlist(lapply(, function(x)which(unique.dates ==x)))
     		## make a vector of all the indices of unique.dates that match the dates in temp.df
-  			sdevs <- unlist(lapply(date.indices, function(k)sd(temp.df[which(temp.df$DateGroup %in% unique.dates[(k-keepPeriods):(k-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
-  			sdevcat <-  paste( temp.df$DateGroup[start.index:nrow(temp.df)] , ",", x, sep="")
+  			sdevs <- unlist(lapply(combocat.df$DateGroup[start.index:nrow(combocat.df)], function(j)sd(combocat.df[which(combocat.df$DateGroup %in% unique.dates[(which(unique.dates == j)-keepPeriods):(which(unique.dates == j)-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
+  			sdevcat <-  paste( combocat.df$DateGroup[start.index:nrow(combocat.df)] , ",", x, sep="")
 				comboCat.list[[x]] <- cbind(dateGroupcombocat=sdevcat, Sdev=sdevs)
   		}
 			
