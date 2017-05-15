@@ -23,17 +23,17 @@
 
 addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignorePeriods = 0, returnLimits = FALSE, limitFactor = 3, limitSide = 'upper', altUL = 0.001, altLL = 0.00, keepPeriods){
 	
-	
-
+  #current.categories <- unique(subset(sparseRateFrame, DateGroup >= unique(sparseRateFrame$DateGroup)[keepPeriods])[,ratePartitionVec])
+  #sparseRateFrame <- subset(sparseRateFrame, 
   if(length(ratePartitionVec) == 1) {
-
-    sparseRateFrame[,'combocat'] <- sparseRateFrame[,ratePartitionVec]
+  		sparseRateFrame[,'combocat'] <- sparseRateFrame[,ratePartitionVec]
   } else {
-
-    sparseRateFrame[,'combocat'] <- do.call(paste, c(sparseRateFrame[,ratePartitionVec], sep=','))
-  }
-
+			sparseRateFrame[,'combocat'] <- do.call(paste, c(sparseRateFrame[,ratePartitionVec], sep=','))
+  } 
+  	
+  # comboCats <- as.character(unique(subset(sparseRateFrame, DateGroup >= unique(sparseRateFrame$DateGroup)[keepPeriods])[,'combocat']))
   comboCats <- as.character(unique(sparseRateFrame[,'combocat']))
+  # sparseRateFrame <- subset(sparseRateFrame, combocat %in% comboCats)
   
   if(keepPeriods == 0){
   	avgFrame <- as.data.frame(do.call(rbind, lapply(1:length(comboCats), function(x) cbind(combocat = comboCats[x], Avg = mean(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ][with(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x], ], order(DateGroup)), 'Rate'][1:(length(sparseRateFrame[sparseRateFrame[,'combocat'] == comboCats[x],'DateGroup']) - ignorePeriods)], na.rm=TRUE)))))
@@ -48,17 +48,16 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
   		combocat.df <- sparseRateFrame[which(sparseRateFrame$combocat == x), ]
   		combocat.df <- combocat.df[order(combocat.df$DateGroup), ]
   		## find the index of the the first row with the plot.startDate.[week, month, quarter] (the one you want to see on the graph)
-  		start.index <- min(which(combocat.df$DateGroup == unique(combocat.df$DateGroup)[keepPeriods+1] ))
-    	unique.dates <- unique(combocat.df$DateGroup)
+  		unique.dates <- unique(combocat.df$DateGroup)
+  		start.index <- min(which(combocat.df$DateGroup == unique.dates[keepPeriods+1] ))
+    	
   		averages <- unlist(lapply(combocat.df$DateGroup[start.index:nrow(combocat.df)], function(j)mean(combocat.df[which(combocat.df$DateGroup %in% unique.dates[(which(unique.dates == j)-keepPeriods):(which(unique.dates == j)-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
   		averagecat <-  paste( combocat.df$DateGroup[start.index:nrow(combocat.df)] , ",", x, sep="")
 			comboCat.list[[x]] <- cbind(dateGroupcombocat=averagecat, Avg=averages)
   	}
-  	
   	avgFrame <- as.data.frame(do.call(rbind, comboCat.list))
   	avgFrame[,'Avg'] <- as.numeric(as.character(avgFrame[,'Avg']))
   	avgFrame[is.nan(avgFrame[,'Avg']),'Avg'] <- NA
-
 		sparseRateFrame$dateGroupcombocat <- paste(sparseRateFrame$DateGroup, ",", sparseRateFrame$combocat, sep="")
   	sparseRateFrame.original <- sparseRateFrame 
   	sparseRateFrame <- unique(merge(sparseRateFrame, avgFrame, by='dateGroupcombocat'))
@@ -81,8 +80,9 @@ addStatsToSparseHandledData <- function(sparseRateFrame, ratePartitionVec, ignor
   			combocat.df <- sparseRateFrame.original[which(sparseRateFrame.original$combocat == x), ]
   			combocat.df <- combocat.df[order(combocat.df$DateGroup), ]
   			## find the index of the the first row with the plot.startDate.[week, month, quarter] (the one you want to see on the graph)
-  			start.index <- min(which(combocat.df$DateGroup == unique(combocat.df$DateGroup)[keepPeriods+1] ))
-    		unique.dates <- unique(combocat.df$DateGroup)
+  			unique.dates <- unique(combocat.df$DateGroup)
+  			start.index <- min(which(combocat.df$DateGroup == unique.dates[keepPeriods+1] ))
+    		
     		#date.indices <- unlist(lapply(, function(x)which(unique.dates ==x)))
     		## make a vector of all the indices of unique.dates that match the dates in temp.df
   			sdevs <- unlist(lapply(combocat.df$DateGroup[start.index:nrow(combocat.df)], function(j)sd(combocat.df[which(combocat.df$DateGroup %in% unique.dates[(which(unique.dates == j)-keepPeriods):(which(unique.dates == j)-ignorePeriods)]), 'Rate'], na.rm=TRUE)))
